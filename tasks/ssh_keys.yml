@@ -7,13 +7,20 @@
 #     so the user can initiate outbound SSH connections (e.g. to workload VMs).
 #     Each entry: { src: <path on controller>, dest: <filename or absolute path> }
 #     If dest is a filename only (no leading /), it is placed under ~/.ssh/.
-#     NOTE: Private keys are sensitive, so only the src path is used (instead of the full content) for security. 
+#     NOTE: Private keys are sensitive, so only the src path is used (instead of the full content) for security.
 #     The private key file must exist on the Ansible controller and be protected with appropriate permissions.
 #
 #   ssh_public_keys  — authorise public keys so external clients can log in as
 #     this user. Uses ansible.posix.authorized_key, which appends to
 #     ~/.ssh/authorized_keys idempotently.
-#     Each entry: { key: <full pubkey string>, comment: <optional label> }
+#     Each entry: { src: <controller path to .pub file>, comment: <optional label> }
+#     NOTE: Public keys correspond to private keys used to access the servers.
+#     While not secret, keeping them as a src file path (instead of inline strings)
+#     avoids storing key material in version control. It also avoids confusion about
+#     which keys are authorised on which hosts: when a key is inlined as a string it
+#     can silently appear in multiple playbooks or roles, making it hard to audit which
+#     key grants access where. A named .pub file makes the relationship explicit and
+#     traceable.
 #
 # Requirements:
 #   ansible.posix collection must be installed for the authorized_key task.
@@ -64,9 +71,9 @@
 - name: Authorise public SSH keys for users
   ansible.posix.authorized_key:
     user: "{{ item.0.username }}"
-    key: "{{ item.1.key }}"
+    key: "{{ lookup('file', item.1.src) }}" # read the public key content from the file on the controller
     comment: "{{ item.1.comment | default(omit) }}"
     state: present
   loop: "{{ users_list | subelements('ssh_public_keys', skip_missing=True) }}"
   loop_control:
-    label: "{{ item.0.username }}: {{ item.1.comment | default(item.1.key[:30] + '...') }}" # show user + key comment instead of the full dict in Ansible output and truncate long keys (max 30 chars) for readability
+    label: "{{ item.0.username }}: {{ item.1.comment | default(item.1.src) }}" # show user + comment (or src path) instead of the full dict in Ansible output

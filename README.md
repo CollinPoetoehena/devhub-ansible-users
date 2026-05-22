@@ -67,7 +67,7 @@ Each entry in `users_list`:
 | `desc` | no | GECOS comment stored in `/etc/passwd` |
 | `use_sudo` | no (default `false`) | Grant passwordless sudo |
 | `ssh_private_keys` | no | List of private keys to deploy to `~/.ssh/`. Each entry: `{ src, dest }` |
-| `ssh_public_keys` | no | List of public keys to authorise for login. Each entry: `{ key, comment }` |
+| `ssh_public_keys` | no | List of public keys to authorise for login. Each entry: `{ src, comment }` |
 
 #### `ssh_private_keys` entry fields
 
@@ -80,7 +80,7 @@ Each entry in `users_list`:
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `key` | yes | Full public key string (e.g. `ssh-rsa AAAA...`) |
+| `src` | yes | Path on the Ansible controller to the `.pub` file. Using a file path instead of an inline string keeps key material out of version control and avoids confusion about which keys are authorised on which hosts (when a key is inlined as a string it can silently appear in multiple playbooks or roles, making it hard to audit which key grants access where. A named .pub file makes the relationship explicit and traceable). |
 | `comment` | no | Human-readable label added alongside the key in `authorized_keys` |
 
 ## Sudo behaviour
@@ -112,7 +112,7 @@ users_list:
       - src: "{{ playbook_dir }}/keys/backup_id_rsa"
         dest: "/opt/keys/backup_id_rsa"   # absolute path
     ssh_public_keys:
-      - key: "ssh-rsa AAAA..."
+      - src: "{{ playbook_dir }}/keys/workload_id_rsa.pub"
         comment: "laptop key"
 
   - username: poetoec
@@ -127,8 +127,8 @@ users_list:
 ```
 
 > **Note on public vs private keys:**  
-> - `ssh_public_keys` authorises who can **log in as** this user (written to `authorized_keys`).  
-> - `ssh_private_keys` deploys keys this user will use to **connect elsewhere** (e.g. from a mgmtvm to workload VMs).
+> - `ssh_public_keys` — read from a `.pub` file on the Ansible controller (via `src`); authorises who can **log in as** this user (written to `authorized_keys`). Using a file path keeps key material out of version control.  
+> - `ssh_private_keys` — also read from a file on the Ansible controller (via `src`); deploys keys this user will use to **connect elsewhere** (e.g. from a mgmtvm to workload VMs).
 
 ## Usage
 
@@ -174,7 +174,7 @@ ansible-galaxy install -r requirements.yml -p <path/to/roles>
             dest: "workload_id_rsa"
         # Authorise a public key so CI/CD can log in as ansibleremote
         ssh_public_keys:
-          - key: "ssh-rsa AAAA..."
+          - src: "{{ playbook_dir }}/keys/cicd_id_rsa.pub"
             comment: "ci-cd pipeline key"
       # Specific for a personal account, such as for an administrator, etc.
       - username: poetoec

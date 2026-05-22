@@ -22,5 +22,12 @@ users_groups: []
 #                     NOTE: Private keys are sensitive so only the src path is used (instead of the full content) for security.
 #   ssh_public_keys:  (optional) list of public keys to authorise for SSH login
 #                     as this user (appended to ~/.ssh/authorized_keys)
-#                     Each entry: { key: <full pubkey string>, comment: <optional label> }
+#                     Each entry: { src: <controller path to .pub file>, comment: <optional label> }
+#                     NOTE: Public keys correspond to private keys used to access the servers.
+#                     While not secret, keeping them as a src file path (instead of inline strings)
+#                     avoids storing key material in version control. It also avoids confusion about
+#                     which keys are authorised on which hosts: when a key is inlined as a string it
+#                     can silently appear in multiple playbooks or roles, making it hard to audit which
+#                     key grants access where. A named .pub file makes the relationship explicit and
+#                     traceable.
 users_list: []
