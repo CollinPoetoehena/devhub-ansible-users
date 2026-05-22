@@ -1,0 +1,32 @@
+---
+# Group management for the users role.
+#
+# Groups are created before users because the ansible.builtin.user task
+# requires the primary group to already exist on the system.
+
+# ==================== Create defined groups ====================
+
+- name: Create defined groups
+  ansible.builtin.group:
+    name: "{{ item.groupname }}"
+    state: present
+  loop: "{{ users_groups }}" # Loop over the list of group definitions provided in users_groups
+  loop_control:
+    label: "{{ item.groupname }}" # show group name instead of the full dict in Ansible output
+
+# ==================== Create implicit user primary groups ====================
+# Some users have their own dedicated primary group (e.g. a service account
+# like 'ansibleremote' in group 'ansibleremote') that is not listed in
+# users_groups. This task creates those groups so the user task never fails
+# with a "group does not exist" error.
+# The filter extracts all groupnames already defined in users_groups so we
+# skip groups that were already created by the task above.
+
+- name: Create user primary groups not already in users_groups
+  ansible.builtin.group:
+    name: "{{ item.group }}"
+    state: present
+  loop: "{{ users_list }}"
+  loop_control:
+    label: "{{ item.group }}" # show group name instead of the full dict in Ansible output
+  when: item.group not in (users_groups | map(attribute='groupname') | list)

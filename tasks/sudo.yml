@@ -1,0 +1,85 @@
+---
+# Sudo management for the users role.
+#
+# Two sudo strategies:
+#   1. Group-level — /etc/sudoers.d/group_<name> covers all current and future
+#      members of a group (preferred for shared admin groups like as-admin).
+#   2. User-level  — /etc/sudoers.d/user_<name> added only when the user's
+#      primary group does not already grant sudo, avoiding redundant files.
+#
+# Cleanup tasks remove stale files when use_sudo is revoked or becomes
+# redundant (user moved into a sudo group), which is critical for security.
+#
+# Mode 0440 is required by sudo — it refuses files that are world- or
+# group-writable. The 'validate' parameter runs `visudo -cf <tmpfile>` before
+# replacing the destination, so a syntax error aborts instead of breaking sudo.
+
+# ==================== Group-level sudo ====================
+
+# The '%' prefix is the sudoers syntax for a group (as opposed to a user).
+- name: Grant sudo access to groups with use_sudo enabled
+  ansible.builtin.copy:
+    content: "%{{ item.groupname }} ALL=(ALL) NOPASSWD:ALL\n"
+    dest: "/etc/sudoers.d/group_{{ item.groupname }}"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s" # validates syntax before placing the file
+  loop: "{{ users_groups }}"
+  loop_control:
+    label: "{{ item.groupname }}" # show group name instead of the full dict in Ansible output
+  when: item.use_sudo | default(false) | bool
+
+# Cleanup:
+# Removing stale sudoers files is critical for security: if a group or user had
+# use_sudo: true and it is later changed to use_sudo: false, the file in
+# /etc/sudoers.d/ would remain and continue granting access without these tasks.
+# Remove the group sudoers file when use_sudo has been set to false.
+- name: Remove sudoers file for groups with use_sudo disabled
+  ansible.builtin.file:
+    path: "/etc/sudoers.d/group_{{ item.groupname }}"
+    state: absent
+  loop: "{{ users_groups }}"
+  loop_control:
+    label: "{{ item.groupname }}" # show group name instead of the full dict in Ansible output
+  when: not (item.use_sudo | default(false) | bool)
+
+# ==================== User-level sudo ====================
+# Only create a per-user file when the user's primary group does not already
+# grant sudo, to avoid redundant files and ambiguity about grant origin.
+#
+# Filter chain explanation:
+#   selectattr('use_sudo')        — keeps only groups where use_sudo is truthy
+#   map(attribute='groupname')    — extracts the group name strings
+#   list                          — materialises the result
+
+- name: Grant sudo to individual users whose primary group lacks sudo
+  ansible.builtin.copy:
+    content: "{{ item.username }} ALL=(ALL) NOPASSWD:ALL\n"
+    dest: "/etc/sudoers.d/user_{{ item.username }}"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: "visudo -cf %s" # validates syntax before placing the file
+  loop: "{{ users_list }}"
+  loop_control:
+    label: "{{ item.username }}" # show username instead of the full dict in Ansible output
+  when:
+    - item.use_sudo | default(false) | bool
+    - item.group not in (users_groups | selectattr('use_sudo') | map(attribute='groupname') | list)
+
+# Cleanup:
+# Similar to the group cleanup task, revoking user-level sudo is critical for security.
+# Remove the per-user sudoers file in two situations:
+#   1. use_sudo was revoked (use_sudo: false) — access must be withdrawn.
+#   2. The user's group now grants sudo — the individual file is redundant.
+- name: Remove stale per-user sudoers file
+  ansible.builtin.file:
+    path: "/etc/sudoers.d/user_{{ item.username }}"
+    state: absent
+  loop: "{{ users_list }}"
+  loop_control:
+    label: "{{ item.username }}" # show username instead of the full dict in Ansible output
+  when: >
+    not (item.use_sudo | default(false) | bool) or
+    item.group in (users_groups | selectattr('use_sudo') | map(attribute='groupname') | list)

@@ -1,0 +1,41 @@
+---
+# User and group management
+#
+# Execution order:
+#   1. groups    — create OS groups before users (users reference groups by name)
+#   2. users     — create OS user accounts
+#   3. sudo      — place/remove /etc/sudoers.d/ files
+#   4. ssh_keys  — deploy private keys and authorise public keys per user
+#
+# Execution order matters here: groups must exist before users are created,
+# and sudoers files must be validated before being placed (to avoid locking
+# out access due to a syntax error in /etc/sudoers.d/).
+#
+# Two sudo strategies are applied:
+#   1. Group-level sudo  — a single /etc/sudoers.d/group_<name> file covers
+#      every current and future member of that group (e.g. as-admin).
+#   2. User-level sudo   — a per-user /etc/sudoers.d/user_<name> file is added
+#      only when the user's own primary group does not already have sudo. This
+#      avoids redundant files for users who inherit sudo via their group.
+#
+# Configure users_groups and users_list in your playbook vars or group_vars.
+
+- name: Manage OS groups
+  ansible.builtin.import_tasks: groups.yml
+  when: users_groups | length > 0 or users_list | length > 0
+  tags: [users, groups]
+
+- name: Create OS users
+  ansible.builtin.import_tasks: users.yml
+  when: users_list | length > 0
+  tags: [users]
+
+- name: Configure sudo access
+  ansible.builtin.import_tasks: sudo.yml
+  when: users_groups | length > 0 or users_list | length > 0
+  tags: [users, sudo]
+
+- name: Deploy SSH keys
+  ansible.builtin.import_tasks: ssh_keys.yml
+  when: users_list | length > 0
+  tags: [users, ssh]

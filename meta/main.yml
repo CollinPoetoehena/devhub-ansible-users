@@ -1,0 +1,10 @@
+galaxy_info:
+  author: CollinPoetoehena
+  description: Generic OS user, group, sudo, and SSH key management for Linux hosts
+  min_ansible_version: 2.9
+  # This package supports both RHEL-based and Debian-based distributions, but the primary focus is on RHEL/CentOS/Rocky/AlmaLinux. 
+  # The tasks are written with dnf in mind, but the "package" module is used for compatibility since jumphost functionality is generally similar across distros.
+  platforms:
+    - name: EL # EL for Enterprise Linux (RHEL, CentOS, AlmaLinux, Rocky Linux, etc., but mainly RHEL)
+    - name: Ubuntu # Ubuntu for Debian-based distributions (Ubuntu 22.04 LTS or later)
+    - name: Debian # Debian for Debian-based distributions (Debian 11 or later)

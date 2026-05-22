@@ -1,0 +1,26 @@
+---
+# defaults file for users
+
+# ==================== Groups ====================
+# Admin/shared groups to create on the host.
+# Each entry:
+#   groupname:  (required) name of the OS group
+#   use_sudo:   (optional, default false) grant passwordless sudo to all members
+users_groups: []
+
+# ==================== Users ====================
+# OS users to create on the host.
+# Each entry:
+#   username:         (required) OS username
+#   desc:             (optional) GECOS comment stored in /etc/passwd
+#   group:            (required) primary group; must exist in users_groups or it
+#                     is automatically created as a standalone primary group
+#   use_sudo:         (optional, default false) grant passwordless sudo
+#   ssh_private_keys: (optional) list of private key files to deploy to this
+#                     user's ~/.ssh/ directory (for outbound connections)
+#                     Each entry: { src: <controller path>, dest: <filename or abs path> }
+#                     NOTE: Private keys are sensitive so only the src path is used (instead of the full content) for security.
+#   ssh_public_keys:  (optional) list of public keys to authorise for SSH login
+#                     as this user (appended to ~/.ssh/authorized_keys)
+#                     Each entry: { key: <full pubkey string>, comment: <optional label> }
+users_list: []

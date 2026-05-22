@@ -1,0 +1,18 @@
+---
+# User creation for the users role.
+#
+# create_home: true ensures a home directory is created (needed for SSH keys,
+# shell history, etc.). The shell is set to /bin/bash explicitly so accounts
+# are interactive by default, regardless of the system default shell.
+
+- name: Create OS users
+  ansible.builtin.user:
+    name: "{{ item.username }}"
+    comment: "{{ item.desc | default('') }}" # stored as the GECOS field in /etc/passwd
+    group: "{{ item.group }}" # primary group (must exist; created by groups.yml)
+    shell: /bin/bash # Use Bash as the default shell for all users to ensure interactivity and compatibility with common user scripts and tools.
+    state: present
+    create_home: true # Create home directory if it doesn't exist (required for SSH keys, shell history, etc.)
+  loop: "{{ users_list }}" # Loop over the list of user definitions provided in users_list
+  loop_control:
+    label: "{{ item.username }}" # show username instead of the full dict in Ansible output
