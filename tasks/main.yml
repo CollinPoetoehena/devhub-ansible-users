@@ -19,6 +19,17 @@
 #      avoids redundant files for users who inherit sudo via their group.
 #
 # Configure users_groups and users_list in your playbook vars or group_vars.
+# 
+# Verification commands (for some commands you may need to be root or use sudo):
+#   - List all users: `cat /etc/passwd`
+#   - List usernames only: `cut -d: -f1 /etc/passwd`
+#   - List human users: `awk -F: '$3 >= 1000 {print $1}' /etc/passwd`
+#   - List all groups: `cat /etc/group`
+#   - List group names only: `cut -d: -f1 /etc/group`
+#   - Show user's groups: `groups <username>`
+#   - Show full user identity info: `id <username>`
+#   - Check sudo access: `sudo -l` for the current user or as sudo (e.g. after `sudo su`) `sudo -l -U <user>` 
+#   - Check SSH key auth: `ssh -i <private_key> <user>@<host>`
 
 - name: Manage OS groups
   ansible.builtin.import_tasks: groups.yml
