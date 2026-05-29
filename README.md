@@ -1,6 +1,6 @@
-# users
+# devhub-ansible-users
 
-> Part of [dev-hub/Ansible](https://github.com/CollinPoetoehena/dev-hub/blob/main/Ansible.md) — see that file for conventions, structure guidelines, and the full role index.
+> Part of [DevHub/Ansible](https://github.com/CollinPoetoehena/DevHub/blob/main/packages/Ansible.md) — see that file for conventions, structure guidelines, and the full role index.
 
 Generic OS user, group, sudo, and SSH key management for Linux hosts. Designed to be reused across any host type (mgmtvm, jumphost, workload VMs, etc.).
 
@@ -98,7 +98,7 @@ Stale files are **removed** automatically to avoid orphaned sudo grants:
 
 ```yaml
 users_groups:
-  - groupname: as-admin
+  - groupname: admin
     use_sudo: true          # all members get passwordless sudo via group file
 
 users_list:
@@ -117,7 +117,7 @@ users_list:
 
   - username: poetoec
     desc: "Collin Poetoëhena"
-    group: as-admin         # sudo inherited from group; no per-user sudoers file added
+    group: admin         # sudo inherited from group; no per-user sudoers file added
     use_sudo: true
 
   - username: addmuser
@@ -137,8 +137,8 @@ users_list:
 ```yaml
 ---
 roles:
-  - name: users
-    src: https://github.com/CollinPoetoehena/ansible-role-users.git
+  - name: devhub.users
+    src: https://github.com/CollinPoetoehena/devhub-ansible-users.git
     scm: git
     version: 1.0.0
 ```
@@ -158,7 +158,7 @@ ansible-galaxy install -r requirements.yml -p <path/to/roles>
   become: true
   vars:
     users_groups:
-      - groupname: as-admin
+      - groupname: admin
         use_sudo: true
 
     users_list:
@@ -179,7 +179,7 @@ ansible-galaxy install -r requirements.yml -p <path/to/roles>
       # Specific for a personal account, such as for an administrator, etc.
       - username: poetoec
         desc: "Collin Poetoëhena"
-        group: as-admin
+        group: admin
         use_sudo: true
       # Account for external monitoring tool; no sudo or SSH access needed since it only needs to run a local agent that doesn't connect anywhere or require elevated permissions.
       - username: addmuser
@@ -188,7 +188,7 @@ ansible-galaxy install -r requirements.yml -p <path/to/roles>
         use_sudo: false
 
   roles:
-    - role: users
+    - role: devhub.users
 ```
 
 ### Selective execution with tags
